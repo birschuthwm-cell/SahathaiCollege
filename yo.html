@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>โปรแกรมแสดงและบันทึกคะแนนนักเรียน</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Prompt', 'Sarabun', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #e0f2fe 0%, #e8f5e8 50%, #fce4ec 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .grade-excellent { background: linear-gradient(135deg, #10b981, #059669); }
+        .grade-good { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .grade-fair { background: linear-gradient(135deg, #f59e0b, #d97706); }
+        .grade-poor { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- Cover Page -->
+    <div id="coverPage" class="min-h-screen flex items-center justify-center p-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <!-- Header -->
+            <div class="mb-12">
+                <div class="floating text-8xl mb-6">📚</div>
+                <h1 class="text-5xl md:text-6xl font-bold text-gray-800 mb-4">
+                    โปรแกรมแสดงและบันทึกคะแนนนักเรียน
+                </h1>
+                <h2 class="text-2xl md:text-3xl font-medium text-gray-600 mb-8">
+                    ชั้นประถมศึกษาปีที่ 6
+                </h2>
+                <p class="text-lg text-gray-500 max-w-2xl mx-auto">
+                    ระบบจัดการคะแนนที่ทันสมัย เชื่อมต่อกับ Google Sheet 
+                    เพื่อการบันทึกและติดตามผลการเรียนที่มีประสิทธิภาพ
+                </p>
+            </div>
+
+            <!-- Features Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 card-hover">
+                    <div class="text-4xl mb-4">📊</div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">แสดงคะแนน</h3>
+                    <p class="text-gray-600">ดูคะแนนแบบละเอียด พร้อมการประเมินผลอัตโนมัติ</p>
+                </div>
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 card-hover">
+                    <div class="text-4xl mb-4">☁️</div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Google Sheet</h3>
+                    <p class="text-gray-600">เชื่อมต่อข้อมูลจาก Google Sheet แบบเรียลไทม์</p>
+                </div>
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl p-6 card-hover">
+                    <div class="text-4xl mb-4">💾</div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">บันทึกถาวร</h3>
+                    <p class="text-gray-600">ระบบ Local Storage เก็บข้อมูลไว้ในเครื่อง</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-y-4">
+                <button onclick="goToDashboard()" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-12 py-4 rounded-2xl text-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    🚀 เริ่มใช้งาน
+                </button>
+                <div class="text-sm text-gray-500">
+                    หรือ
+                </div>
+                <button onclick="showLoginModal()" class="bg-gradient-to-r from-green-400 to-blue-500 text-white px-10 py-3 rounded-xl text-lg font-medium hover:from-green-500 hover:to-blue-600 transition-all duration-300 transform hover:scale-105">
+                    🔐 เข้าสู่ระบบเพื่อดูคะแนน
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Score Page -->
+    <div id="studentScorePage" class="hidden min-h-screen p-4">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">📊 คะแนนของฉน</h1>
+                        <p class="text-gray-600" id="studentNameDisplay">ชั้นประถมศึกษาปีที่ 6</p>
+                    </div>
+                    <div class="flex space-x-3 mt-4 md:mt-0">
+                        <button onclick="downloadGradeReport()" class="bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-3 rounded-xl font-medium hover:from-green-600 hover:to-teal-700 transition-all duration-300">
+                            📄 ดาวน์โหลดใบเกรด
+                        </button>
+                        <button onclick="goToCover()" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-xl font-medium hover:from-gray-600 hover:to-gray-700 transition-all duration-300">
+                            🏠 กลับหน้าหลัก
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Score Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Individual Scores -->
+                <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">📋 คะแนนรายวิชา</h3>
+                    <div class="space-y-3" id="individualScores">
+                        <!-- Scores will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">📈 สรุปผลการเรียน</h3>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold mb-2" id="totalScoreDisplay">0</div>
+                        <div class="text-lg text-gray-600 mb-4">คะแนนรวม</div>
+                        <div class="inline-flex items-center px-4 py-2 rounded-full text-lg font-medium text-white" id="gradeDisplay">
+                            <!-- Grade will be populated here -->
+                        </div>
+                        <div class="mt-4 text-sm text-gray-500" id="houseDisplay">
+                            <!-- House will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">📊 กราฟแสดงคะแนน</h3>
+                <div class="space-y-4" id="scoreChart">
+                    <!-- Chart will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboardPage" class="hidden min-h-screen p-4">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">📊 Dashboard คะแนนนักเรียน</h1>
+                        <p class="text-gray-600">ชั้นประถมศึกษาปีที่ 6</p>
+                    </div>
+                    <div class="flex space-x-3 mt-4 md:mt-0">
+                        <button onclick="loadFromGoogleSheet()" class="bg-gradient-to-r from-green-500 to-teal-600 text-white px-6 py-3 rounded-xl font-medium hover:from-green-600 hover:to-teal-700 transition-all duration-300">
+                            ☁️ เรียกดูข้อมูลจาก Google Sheet
+                        </button>
+                        <button id="addDataBtn" onclick="showAddDataModal()" class="hidden bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-xl font-medium hover:from-purple-600 hover:to-pink-700 transition-all duration-300">
+                            ➕ เพิ่มข้อมูลใหม่
+                        </button>
+                        <button id="adminLoginBtn" onclick="showAdminLoginModal()" class="bg-gradient-to-r from-orange-500 to-red-600 text-white px-6 py-3 rounded-xl font-medium hover:from-orange-600 hover:to-red-700 transition-all duration-300">
+                            🔑 เข้าสู่ระบบแอดมิน
+                        </button>
+                        <button onclick="goToCover()" class="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-xl font-medium hover:from-gray-600 hover:to-gray-700 transition-all duration-300">
+                            🏠 กลับหน้าหลัก
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white/90 backdrop-blur-sm rounded-xl p-6 text-center">
+                    <div class="text-2xl font-bold text-green-600" id="excellentCount">0</div>
+                    <div class="text-sm text-gray-500">ดีเยี่ยม (80-100)</div>
+                </div>
+                <div class="bg-white/90 backdrop-blur-sm rounded-xl p-6 text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="goodCount">0</div>
+                    <div class="text-sm text-gray-500">ดี (60-79)</div>
+                </div>
+                <div class="bg-white/90 backdrop-blur-sm rounded-xl p-6 text-center">
+                    <div class="text-2xl font-bold text-yellow-600" id="fairCount">0</div>
+                    <div class="text-sm text-gray-500">พอใช้ (50-59)</div>
+                </div>
+                <div class="bg-white/90 backdrop-blur-sm rounded-xl p-6 text-center">
+                    <div class="text-2xl font-bold text-red-600" id="poorCount">0</div>
+                    <div class="text-sm text-gray-500">ปรับปรุง (<50)</div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6">
+                    <h3 class="text-xl font-semibold">📋 ตารางคะแนนนักเรียน</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr id="tableHeader">
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">เลขประจำตัว</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-gray-500 uppercase">ชื่อ-สกุล</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">สอบคัดเลือก</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">ปลายภาค</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">ใบงาน uno</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">ใบงาน ty</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">คะแนนพฤติ</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">การอยู่ร่วมกับเพื่อน</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">คะแนนอยู่บ้าน</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">บ้าน</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">คะแนนรวม</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase">ผลการประเมิน</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTable" class="divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="12" class="px-6 py-8 text-center text-gray-500">
+                                    <div class="text-4xl mb-2">📄</div>
+                                    <div>ยังไม่มีข้อมูล กรุณากดปุ่ม "เรียกดูข้อมูลจาก Google Sheet"</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">🔐 เข้าสู่ระบบ</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสนักเรียน</label>
+                    <input type="text" id="loginStudentId" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="กรอกรหัสนักเรียน" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                    <input type="password" id="loginPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="กรอกรหัสผ่าน" required>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200">
+                        เข้าสู่ระบบ
+                    </button>
+                    <button type="button" onclick="closeLoginModal()" class="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-600 transition-all duration-200">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div id="adminLoginModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">🔑 เข้าสู่ระบบแอดมิน</h2>
+            <form id="adminLoginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
+                    <input type="text" id="adminUsername" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="กรอกชื่อผู้ใช้" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                    <input type="password" id="adminPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent" placeholder="กรอกรหัสผ่าน" required>
+                </div>
+                <div class="flex space-x-3">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-red-600 text-white py-3 px-6 rounded-lg font-medium hover:from-orange-600 hover:to-red-700 transition-all duration-200">
+                        เข้าสู่ระบบ
+                    </button>
+                    <button type="button" onclick="closeAdminLoginModal()" class="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-600 transition-all duration-200">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Data Modal -->
+    <div id="addDataModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">➕ เพิ่มข้อมูลนักเรียนใหม่</h2>
+            <form id="addDataForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">เลขประจำตัว</label>
+                        <input type="text" id="addStudentId" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="เช่น 110" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ-สกุล</label>
+                        <input type="text" id="addStudentName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="เช่น เด็กหญิง สมใจ" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">สอบคัดเลือก</label>
+                        <input type="number" id="addScore1" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ปลายภาค</label>
+                        <input type="number" id="addScore2" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ใบงาน uno</label>
+                        <input type="number" id="addScore3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ใบงาน ty</label>
+                        <input type="number" id="addScore4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">คะแนนพฤติ</label>
+                        <input type="number" id="addScore5" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">การอยู่ร่วมกับเพื่อน</label>
+                        <input type="number" id="addScore6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">คะแนนอยู่บ้าน</label>
+                        <input type="number" id="addScore7" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="0-100" min="0" max="100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">บ้าน</label>
+                        <input type="text" id="addHouse" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="เช่น แดง, เหลือง, เขียว, น้ำเงิน">
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-600 hover:to-pink-700 transition-all duration-200">
+                        ➕ เพิ่มข้อมูล
+                    </button>
+                    <button type="button" onclick="closeAddDataModal()" class="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-gray-600 transition-all duration-200">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Student login data
+        const studentData = {
+            '101': { password: '101', name: 'เด็กหญิง ปวริศา' },
+            '102': { password: '102', name: 'เด็กหญิง ศุพัทชา' },
+            '103': { password: '103', name: 'เด็กหญิง ณัชชา' },
+            '104': { password: '104', name: 'เด็กหญิง ธัญจิรา' },
+            '105': { password: '105', name: 'เด็กหญิง ณฐิตา' },
+            '106': { password: '106', name: 'เด็กหญิง ญาญัจฉรา' },
+            '107': { password: '107', name: 'เด็กหญิง ภรัณยา' },
+            '108': { password: '108', name: 'เด็กหญิง เลิศกมล' },
+            '109': { password: '109', name: 'เด็กหญิง กิ่งฟ้า' },
+            '110': { password: '110', name: 'นักเรียนหมายเลข 110' },
+            '111': { password: '111', name: 'นักเรียนหมายเลข 111' },
+            '112': { password: '112', name: 'นักเรียนหมายเลข 112' },
+            '113': { password: '113', name: 'นักเรียนหมายเลข 113' },
+            '114': { password: '114', name: 'นักเรียนหมายเลข 114' },
+            '115': { password: '115', name: 'นักเรียนหมายเลข 115' }
+        };
+
+        // Admin credentials
+        const adminData = {
+            username: '1234',
+            password: '1234'
+        };
+
+        let currentData = [];
+        let isAdminLoggedIn = false;
+        let currentStudentData = null;
+
+        // Navigation functions
+        function goToDashboard() {
+            document.getElementById('coverPage').classList.add('hidden');
+            document.getElementById('dashboardPage').classList.remove('hidden');
+        }
+
+        function goToCover() {
+            document.getElementById('dashboardPage').classList.add('hidden');
+            document.getElementById('studentScorePage').classList.add('hidden');
+            document.getElementById('coverPage').classList.remove('hidden');
+        }
+
+        function goToStudentScore(studentId) {
+            // Find student data
+            const studentRow = currentData.slice(1).find(row => row[0] === studentId);
+            if (!studentRow) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ไม่พบข้อมูล',
+                    text: 'ไม่พบข้อมูลคะแนนของนักเรียน',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+
+            currentStudentData = {
+                id: studentRow[0],
+                name: studentRow[1],
+                scores: studentRow.slice(2, -2), // Skip ID, Name, House, Total
+                house: studentRow[studentRow.length - 2],
+                total: studentRow[studentRow.length - 1]
+            };
+
+            // Hide other pages and show student score page
+            document.getElementById('coverPage').classList.add('hidden');
+            document.getElementById('dashboardPage').classList.add('hidden');
+            document.getElementById('studentScorePage').classList.remove('hidden');
+
+            // Display student data
+            displayStudentScores();
+        }
+
+        function displayStudentScores() {
+            if (!currentStudentData || !currentData || currentData.length === 0) return;
+
+            // Update student name
+            document.getElementById('studentNameDisplay').textContent = currentStudentData.name;
+
+            // Score labels (from headers, skip ID, Name, House, Total)
+            const scoreLabels = currentData[0].slice(2, -2);
+            
+            // Display individual scores
+            const individualScoresDiv = document.getElementById('individualScores');
+            individualScoresDiv.innerHTML = '';
+            
+            scoreLabels.forEach((label, index) => {
+                const score = currentStudentData.scores[index] || 0;
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                scoreDiv.innerHTML = `
+                    <span class="font-medium text-gray-700">${label}</span>
+                    <span class="font-bold text-lg ${getScoreColor(score)}">${score}</span>
+                `;
+                individualScoresDiv.appendChild(scoreDiv);
+            });
+
+            // Use the total score from the data (last column before house)
+            const totalScore = parseFloat(currentStudentData.total) || 0;
+            
+            // Display total score
+            document.getElementById('totalScoreDisplay').textContent = totalScore;
+            document.getElementById('totalScoreDisplay').className = `text-4xl font-bold mb-2 ${getScoreColor(totalScore)}`;
+
+            // Display grade
+            const evaluation = getEvaluation(totalScore);
+            const gradeDisplay = document.getElementById('gradeDisplay');
+            gradeDisplay.textContent = evaluation;
+            gradeDisplay.className = `inline-flex items-center px-4 py-2 rounded-full text-lg font-medium text-white ${getEvaluationClass(evaluation)}`;
+
+            // Display house
+            if (currentStudentData.house) {
+                document.getElementById('houseDisplay').textContent = `บ้าน: ${currentStudentData.house}`;
+            }
+
+            // Display score chart
+            displayScoreChart();
+        }
+
+        function getScoreColor(score) {
+            if (score >= 80) return 'text-green-600';
+            if (score >= 60) return 'text-blue-600';
+            if (score >= 50) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+
+        function displayScoreChart() {
+            if (!currentStudentData || !currentData) return;
+
+            const scoreLabels = currentData[0].slice(2, -2);
+            const chartDiv = document.getElementById('scoreChart');
+            chartDiv.innerHTML = '';
+
+            scoreLabels.forEach((label, index) => {
+                const score = currentStudentData.scores[index] || 0;
+                const percentage = Math.min((score / 100) * 100, 100);
+                
+                const chartItem = document.createElement('div');
+                chartItem.className = 'mb-4';
+                chartItem.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-700">${label}</span>
+                        <span class="text-sm font-bold ${getScoreColor(score)}">${score}/100</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="h-3 rounded-full transition-all duration-500 ${getProgressBarColor(score)}" 
+                             style="width: ${percentage}%"></div>
+                    </div>
+                `;
+                chartDiv.appendChild(chartItem);
+            });
+        }
+
+        function getProgressBarColor(score) {
+            if (score >= 80) return 'bg-gradient-to-r from-green-400 to-green-600';
+            if (score >= 60) return 'bg-gradient-to-r from-blue-400 to-blue-600';
+            if (score >= 50) return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
+            return 'bg-gradient-to-r from-red-400 to-red-600';
+        }
+
+        function downloadGradeReport() {
+            window.open('https://drive.google.com/file/d/1cIEymxlT-RI5AKuqIm986UDz1OD1QVPG/view?usp=sharing', '_blank', 'noopener,noreferrer');
+        }
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+        }
+
+        function showAddDataModal() {
+            if (!isAdminLoggedIn) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่มีสิทธิ์เข้าถึง',
+                    text: 'กรุณาเข้าสู่ระบบแอดมินก่อนเพิ่มข้อมูล',
+                    confirmButtonColor: '#f59e0b'
+                });
+                return;
+            }
+            document.getElementById('addDataModal').classList.remove('hidden');
+        }
+
+        function closeAddDataModal() {
+            document.getElementById('addDataModal').classList.add('hidden');
+            document.getElementById('addDataForm').reset();
+        }
+
+        function showAdminLoginModal() {
+            document.getElementById('adminLoginModal').classList.remove('hidden');
+        }
+
+        function closeAdminLoginModal() {
+            document.getElementById('adminLoginModal').classList.add('hidden');
+            document.getElementById('adminLoginForm').reset();
+        }
+
+        function updateAdminUI() {
+            const addDataBtn = document.getElementById('addDataBtn');
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            
+            if (isAdminLoggedIn) {
+                addDataBtn.classList.remove('hidden');
+                adminLoginBtn.textContent = '🚪 ออกจากระบบแอดมิน';
+                adminLoginBtn.onclick = logoutAdmin;
+            } else {
+                addDataBtn.classList.add('hidden');
+                adminLoginBtn.textContent = '🔑 เข้าสู่ระบบแอดมิน';
+                adminLoginBtn.onclick = showAdminLoginModal;
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            updateAdminUI();
+            Swal.fire({
+                icon: 'success',
+                title: 'ออกจากระบบแล้ว',
+                text: 'ออกจากระบบแอดมินเรียบร้อย',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        // Admin login form handler
+        document.getElementById('adminLoginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            if (username === adminData.username && password === adminData.password) {
+                isAdminLoggedIn = true;
+                updateAdminUI();
+                closeAdminLoginModal();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'เข้าสู่ระบบแอดมินสำเร็จ',
+                    text: 'ตอนนี้คุณสามารถเพิ่มข้อมูลนักเรียนได้แล้ว',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เข้าสู่ระบบไม่สำเร็จ',
+                    text: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+                    confirmButtonColor: '#f59e0b'
+                });
+            }
+        });
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const studentId = document.getElementById('loginStudentId').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            const student = studentData[studentId];
+            
+            if (!student || student.password !== password) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เข้าสู่ระบบไม่สำเร็จ',
+                    text: 'รหัสนักเรียนหรือรหัสผ่านไม่ถูกต้อง',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+            
+            closeLoginModal();
+            goToDashboard();
+            
+            // Load data first if not available
+            if (currentData.length === 0) {
+                const savedData = localStorage.getItem('studentScores');
+                if (savedData) {
+                    try {
+                        currentData = JSON.parse(savedData);
+                    } catch (error) {
+                        console.error('Error loading saved data:', error);
+                    }
+                }
+            }
+
+            // Create sample data for the logged-in student if no data exists
+            if (currentData.length === 0) {
+                createSampleData();
+            }
+
+            // Show student scores directly
+            goToStudentScore(studentId);
+        });
+
+        // Add data form handler
+        document.getElementById('addDataForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newStudent = [
+                document.getElementById('addStudentId').value,
+                document.getElementById('addStudentName').value,
+                parseFloat(document.getElementById('addScore1').value) || 0,
+                parseFloat(document.getElementById('addScore2').value) || 0,
+                parseFloat(document.getElementById('addScore3').value) || 0,
+                parseFloat(document.getElementById('addScore4').value) || 0,
+                parseFloat(document.getElementById('addScore5').value) || 0,
+                parseFloat(document.getElementById('addScore6').value) || 0,
+                parseFloat(document.getElementById('addScore7').value) || 0,
+                document.getElementById('addHouse').value || '',
+                0 // Total score placeholder
+            ];
+            
+            // Calculate total score
+            let totalScore = 0;
+            for (let i = 2; i < newStudent.length - 2; i++) {
+                totalScore += newStudent[i];
+            }
+            newStudent[newStudent.length - 1] = totalScore;
+            
+            // Check if student ID already exists
+            const existingData = currentData.slice(1); // Skip header
+            const existingStudent = existingData.find(student => student[0] === newStudent[0]);
+            
+            if (existingStudent) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อมูลซ้ำ',
+                    text: 'รหัสนักเรียนนี้มีอยู่ในระบบแล้ว',
+                    confirmButtonColor: '#3b82f6'
+                });
+                return;
+            }
+            
+            // Add to current data
+            if (currentData.length === 0) {
+                // Create header if no data exists
+                currentData = [
+                    ['เลขประจำตัว', 'ชื่อ-สกุล', 'สอบคัดเลือก', 'ปลายภาค', 'ใบงาน uno', 'ใบงาน ty', 'คะแนนพฤติ', 'การอยู่ร่วมกับเพื่อน', 'คะแนนอยู่บ้าน', 'บ้าน', 'คะแนนรวม']
+                ];
+            }
+            
+            currentData.push(newStudent);
+            
+            // Update student login data
+            studentData[newStudent[0]] = {
+                password: newStudent[0],
+                name: newStudent[1]
+            };
+            
+            // Save to localStorage
+            localStorage.setItem('studentScores', JSON.stringify(currentData));
+            
+            // Update display
+            updateTableHeaders(currentData[0]);
+            displayData(currentData.slice(1));
+            updateStatistics(currentData.slice(1));
+            
+            closeAddDataModal();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'เพิ่มข้อมูลสำเร็จ!',
+                text: `เพิ่มข้อมูล ${newStudent[1]} เรียบร้อยแล้ว`,
+                timer: 3000,
+                showConfirmButton: false
+            });
+        });
+
+        // Load data from Google Sheet
+        async function loadFromGoogleSheet() {
+            Swal.fire({
+                title: 'กำลังโหลดข้อมูล...',
+                text: 'กรุณารอสักครู่',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // Create JSONP callback
+                const callbackName = 'jsonpCallback_' + Date.now();
+                
+                window[callbackName] = function(data) {
+                    processGoogleSheetData(data);
+                    delete window[callbackName];
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'โหลดข้อมูลสำเร็จ!',
+                        text: `พบข้อมูลนักเรียน ${data.length - 1} คน`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                };
+
+                // Create script element for JSONP
+                const script = document.createElement('script');
+                script.src = `https://script.google.com/macros/s/AKfycbyvtoYGF5rTfXzagzJqBzupH5odtCosCROV5c6OtN3UeVvUaChn_gvJeoYQxd8r68WC/exec?callback=${callbackName}`;
+                document.head.appendChild(script);
+
+                // Clean up script after use
+                script.onload = () => {
+                    document.head.removeChild(script);
+                };
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง'
+                });
+            }
+        }
+
+        // Process Google Sheet data
+        function processGoogleSheetData(data) {
+            if (!data || data.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่พบข้อมูล',
+                    text: 'ไม่มีข้อมูลในแผ่นงาน Google Sheet'
+                });
+                return;
+            }
+
+            currentData = data;
+            
+            // Save to localStorage
+            localStorage.setItem('studentScores', JSON.stringify(data));
+            
+            // Update table headers from first row
+            updateTableHeaders(data[0]);
+            
+            // Display data (skip header row)
+            displayData(data.slice(1));
+            
+            // Update statistics
+            updateStatistics(data.slice(1));
+        }
+
+        // Update table headers
+        function updateTableHeaders(headers) {
+            const headerRow = document.getElementById('tableHeader');
+            headerRow.innerHTML = '';
+            
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.className = 'px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase';
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            
+            // Add evaluation column
+            const evalTh = document.createElement('th');
+            evalTh.className = 'px-4 py-3 text-center text-sm font-medium text-gray-500 uppercase';
+            evalTh.textContent = 'ผลการประเมิน';
+            headerRow.appendChild(evalTh);
+        }
+
+        // Display data in table
+        function displayData(data) {
+            const tableBody = document.getElementById('dataTable');
+            tableBody.innerHTML = '';
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+                
+                let totalScore = 0;
+                let scoreColumns = 0;
+                
+                row.forEach((cell, index) => {
+                    const td = document.createElement('td');
+                    td.className = 'px-4 py-3 text-sm text-gray-900 text-center';
+                    td.textContent = cell;
+                    
+                    // Calculate total score (skip first two columns - ID and Name)
+                    if (index >= 2 && index < row.length - 2) {
+                        const score = parseFloat(cell) || 0;
+                        totalScore += score;
+                        scoreColumns++;
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                
+                // Add evaluation
+                const evalTd = document.createElement('td');
+                evalTd.className = 'px-4 py-3 text-center';
+                
+                const evaluation = getEvaluation(totalScore);
+                const evalSpan = document.createElement('span');
+                evalSpan.className = `inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white ${getEvaluationClass(evaluation)}`;
+                evalSpan.textContent = evaluation;
+                
+                evalTd.appendChild(evalSpan);
+                tr.appendChild(evalTd);
+                
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Get evaluation based on score
+        function getEvaluation(score) {
+            if (score >= 80) return 'ดีเยี่ยม';
+            if (score >= 60) return 'ดี';
+            if (score >= 50) return 'พอใช้';
+            return 'ปรับปรุง';
+        }
+
+        // Get CSS class for evaluation
+        function getEvaluationClass(evaluation) {
+            switch (evaluation) {
+                case 'ดีเยี่ยม': return 'grade-excellent';
+                case 'ดี': return 'grade-good';
+                case 'พอใช้': return 'grade-fair';
+                default: return 'grade-poor';
+            }
+        }
+
+        // Update statistics
+        function updateStatistics(data) {
+            let excellent = 0, good = 0, fair = 0, poor = 0;
+            
+            data.forEach(row => {
+                let totalScore = 0;
+                // Calculate total from score columns (skip ID, Name, House, Total columns)
+                for (let i = 2; i < row.length - 2; i++) {
+                    totalScore += parseFloat(row[i]) || 0;
+                }
+                
+                const evaluation = getEvaluation(totalScore);
+                switch (evaluation) {
+                    case 'ดีเยี่ยม': excellent++; break;
+                    case 'ดี': good++; break;
+                    case 'พอใช้': fair++; break;
+                    case 'ปรับปรุง': poor++; break;
+                }
+            });
+            
+            document.getElementById('excellentCount').textContent = excellent;
+            document.getElementById('goodCount').textContent = good;
+            document.getElementById('fairCount').textContent = fair;
+            document.getElementById('poorCount').textContent = poor;
+        }
+
+        // Create sample data for students
+        function createSampleData() {
+            const sampleData = [
+                ['เลขประจำตัว', 'ชื่อ-สกุล', 'สอบคัดเลือก', 'ปลายภาค', 'ใบงาน uno', 'ใบงาน ty', 'คะแนนพฤติ', 'การอยู่ร่วมกับเพื่อน', 'คะแนนอยู่บ้าน', 'บ้าน', 'คะแนนรวม'],
+                ['101', 'เด็กหญิง ปวริศา', 85, 78, 92, 88, 95, 90, 87, 'แดง', 615],
+                ['102', 'เด็กหญิง ศุพัทชา', 82, 85, 89, 91, 88, 93, 84, 'เหลือง', 612],
+                ['103', 'เด็กหญิง ณัชชา', 90, 87, 85, 89, 92, 88, 91, 'เขียว', 622],
+                ['104', 'เด็กหญิง ธัญจิรา', 78, 82, 86, 84, 89, 87, 85, 'น้ำเงิน', 591],
+                ['105', 'เด็กหญิง ณฐิตา', 88, 90, 83, 87, 91, 89, 88, 'แดง', 616],
+                ['106', 'เด็กหญิง ญาญัจฉรา', 92, 89, 91, 85, 87, 92, 90, 'เหลือง', 626],
+                ['107', 'เด็กหญิง ภรัณยา', 86, 84, 88, 90, 85, 91, 89, 'เขียว', 613],
+                ['108', 'เด็กหญิง เลิศกมล', 89, 91, 87, 88, 90, 86, 92, 'น้ำเงิน', 623],
+                ['109', 'เด็กหญิง กิ่งฟ้า', 84, 86, 90, 92, 88, 89, 87, 'แดง', 616],
+                ['110', 'นักเรียนหมายเลข 110', 80, 75, 85, 82, 88, 84, 86, 'เหลือง', 580],
+                ['111', 'นักเรียนหมายเลข 111', 87, 89, 84, 86, 90, 88, 85, 'เขียว', 609],
+                ['112', 'นักเรียนหมายเลข 112', 83, 81, 87, 89, 85, 90, 88, 'น้ำเงิน', 603],
+                ['113', 'นักเรียนหมายเลข 113', 91, 88, 86, 84, 92, 87, 89, 'แดง', 617],
+                ['114', 'นักเรียนหมายเลข 114', 85, 87, 89, 91, 86, 85, 90, 'เหลือง', 613],
+                ['115', 'นักเรียนหมายเลข 115', 88, 90, 85, 87, 89, 91, 88, 'เขียว', 618]
+            ];
+            
+            currentData = sampleData;
+            localStorage.setItem('studentScores', JSON.stringify(sampleData));
+        }
+
+        // Load data from localStorage on page load
+        window.addEventListener('load', function() {
+            const savedData = localStorage.getItem('studentScores');
+            if (savedData) {
+                try {
+                    const data = JSON.parse(savedData);
+                    processGoogleSheetData(data);
+                } catch (error) {
+                    console.error('Error loading saved data:', error);
+                    createSampleData();
+                }
+            } else {
+                createSampleData();
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'986ad61954c545be',t:'MTc1OTE0MjE1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
